@@ -1,3 +1,7 @@
+#
+# Author: Rogério Carvalho Schneider <stockrt@gmail.com>
+#
+
 MODULE=$(shell basename $(PWD))
 VERSION=$(shell sed -ne 's/^Version:[ \t]*\(.*\)/\1/p' $(MODULE).spec)
 USER=$(shell id -un)

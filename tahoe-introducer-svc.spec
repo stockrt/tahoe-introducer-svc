@@ -5,7 +5,7 @@ Summary:   tahoe-introducer-svc daemontools configuration
 Group:     System/Server
 URL:       http://stockrtweb.homelinux.com
 Vendor:    Allmydata.org
-Packager:  Rogerio Carvalho Schneider <stockrt@gmail.com>
+Packager:  Rogério Carvalho Schneider <stockrt@gmail.com>
 License:   GPL
 BuildArch: noarch
 Source:    %{name}-%{version}.tar.gz
@@ -62,5 +62,5 @@ svclist='tahoe-introducer'
 %svc_unregsrv
 
 %changelog
-* Mon Jun  8 2009 - Rogerio Carvalho Schneider <stockrt@gmail.com> - 0.1.0-1
+* Mon Jun  8 2009 - Rogério Carvalho Schneider <stockrt@gmail.com> - 0.1.0-1
 - Initial packing
