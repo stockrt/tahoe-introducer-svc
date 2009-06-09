@@ -27,7 +27,7 @@ tahoe-introducer-svc daemontools configuration
 %{__install} -m 0755 -d %{buildroot}%{_prefix}/local/%{name}/bin
 %{__install} -m 0755 -d %{buildroot}%{_prefix}/local/%{name}/conf
 
-%{__install} -m 0755 -d %{buildroot}/var/log/%{name}
+%{__install} -m 0755 -d %{buildroot}%{_var}/log/%{name}
 
 %{__install} -m 0755 bin/* %{buildroot}%{_prefix}/local/%{name}/bin/
 %{__install} -m 0644 conf/* %{buildroot}%{_prefix}/local/%{name}/conf/
@@ -37,7 +37,7 @@ tahoe-introducer-svc daemontools configuration
 %dir %{_prefix}/local/%{name}
 %dir %{_prefix}/local/%{name}/bin
 %dir %{_prefix}/local/%{name}/conf
-%dir /var/log/%{name}
+%dir %{_var}/log/%{name}
 %{_prefix}/local/%{name}/bin/*
 %config(noreplace) %{_prefix}/local/%{name}/conf/*
 
@@ -53,7 +53,7 @@ svcdir=tahoe-introducer
 exec %{_prefix}/local/%{name}/bin/%{name}
 %svc_mklogrun
 #!/bin/bash
-exec multilog t n10 s1048576 /var/log/%{name}
+exec multilog t n10 s1048576 %{_var}/log/%{name}
 %svc_regsrv -dr
 
 %preun
