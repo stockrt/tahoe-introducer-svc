@@ -9,7 +9,7 @@ Packager:  Rogerio Carvalho Schneider <stockrt@gmail.com>
 License:   GPL
 BuildArch: noarch
 Source:    %{name}-%{version}.tar.gz
-BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
+BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id} -un)
 Requires:  daemontools
 
 %description
