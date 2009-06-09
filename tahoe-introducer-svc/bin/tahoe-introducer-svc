@@ -1,0 +1,7 @@
+#!/bin/bash
+
+# TAHOE_USER
+source /usr/local/tahoe-introducer-svc/conf/tahoe-introducer-svc.conf
+HOMEDIR=$(grep $TAHOE_USER /etc/passwd | cut -d: -f6)
+cd $HOMEDIR/.tahoe-introducer
+exec setuidgid $TAHOE_USER /usr/bin/twistd -ny tahoe-introducer.tac
