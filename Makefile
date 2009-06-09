@@ -1,8 +1,8 @@
 MODULE=$(shell basename $(PWD))
 VERSION=$(shell sed -ne 's/^Version:[ \t]*\(.*\)/\1/p' $(MODULE).spec)
 USER=$(shell id -un)
+SOURCE_DIR=${HOME}/rpmbuild/SOURCES
 #SOURCE_DIR=/tmp/rpm/$(USER)/SOURCES
-SOURCE_DIR=/home/$(USER)/rpmbuild/SOURCES
 
 all: rpm
 
