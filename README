@@ -3,7 +3,7 @@
 # URL:    http://stockrt.github.com
 #
 
-Provides an easy way to put your introducer for Tahoe-LAFS under daemontools
+Provides an easy way to put your Introducer for Tahoe-LAFS under daemontools
 supervise.
 
 daemontools: http://cr.yp.to/daemontools.html
