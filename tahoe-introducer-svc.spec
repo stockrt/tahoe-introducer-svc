@@ -3,7 +3,7 @@ Version:   0.1.0
 Release:   1
 Summary:   tahoe-introducer-svc daemontools configuration
 Group:     System/Server
-URL:       http://stockrtweb.homelinux.com
+URL:       http://allmydata.org/trac/tahoe
 Vendor:    Allmydata.org
 Packager:  Rogério Carvalho Schneider <stockrt@gmail.com>
 License:   GPL
@@ -11,6 +11,14 @@ BuildArch: noarch
 Source:    %{name}-%{version}.tar.gz
 BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id} -un)
 Requires:  daemontools
+
+# Recommended Topdir
+%define _topdir %(echo $HOME)/rpmbuild
+# So the build does not fail due to unpackaged files or missing doc files:
+%define _unpackaged_files_terminate_build 0
+%define _missing_doc_files_terminate_build 0
+# No debug package:
+%define debug_package %{nil}
 
 %description
 tahoe-introducer-svc daemontools configuration
@@ -45,8 +53,8 @@ tahoe-introducer-svc daemontools configuration
 %{__rm} -rf %{buildroot}
 
 %post
-%svc_post
 # daemontools register
+%svc_post
 svcdir=tahoe-introducer
 %svc_mkrun
 #!/bin/bash
@@ -54,9 +62,10 @@ exec %{_prefix}/local/%{name}/bin/%{name}
 %svc_mklogrun
 #!/bin/bash
 exec multilog t n10 s1048576 %{_var}/log/%{name}
-%svc_regsrv -dr
+%svc_regsrv -d
 
 %preun
+# daemontools unregister
 %svc_preun
 svclist='tahoe-introducer'
 %svc_unregsrv

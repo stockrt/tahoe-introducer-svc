@@ -1,7 +1,11 @@
 #!/bin/bash
 
-# TAHOE_USER
-source /usr/local/tahoe-introducer-svc/conf/tahoe-introducer-svc.conf
-HOMEDIR=$(grep $TAHOE_USER /etc/passwd | cut -d: -f6)
-cd $HOMEDIR/.tahoe-introducer
+#
+# Author: Rogério Carvalho Schneider <stockrt@gmail.com>
+# URL:    http://stockrt.github.com
+#
+
+# TAHOE_USER and TAHOE_BASEDIR
+source /usr/local/tahoe-introducer-svc/conf/tahoe-introducer-svc.conf && \
+cd $TAHOE_BASEDIR && \
 exec setuidgid $TAHOE_USER /usr/bin/twistd -ny tahoe-introducer.tac

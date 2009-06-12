@@ -1,0 +1,321 @@
+#
+# English revision: Rogério Carvalho Schneider <stockrt@gmail.com>
+# URL:              http://stockrt.github.com
+#
+
+# Example on how to use Supervise Macros in specfiles:
+#
+#  %post
+#  # daemontools register
+#  %svc_post
+#  svcdir=%{name}
+#  %svc_mkrun
+#  #!/bin/bash
+#  exec %{_prefix}/local/%{name}/bin/%{name}
+#  %svc_mklogrun
+#  #!/bin/bash
+#  exec multilog t n10 s1048576 %{_var}/log/%{name}
+#  %svc_regsrv -dr
+#
+#  %preun
+#  # daemontools unregister
+#  %svc_preun
+#  svclist='%{name}'
+#  %svc_unregsrv
+#
+# %svc_regsrv options:
+#
+# -D  touch /var/service/%{name}/log/down
+# -d  touch /var/service/%{name}/down
+# -r  svc -t /var/service/%{name}
+# -R  svc -t /var/service/log/%{name}
+
+#
+# Supervise Macros
+#
+
+%svc_post\
+upgrade=; test x"$1" = x"2" && upgrade=yes\
+erase=; test -n "$upgrade" && erase=yes\
+cd /var/service\
+umask 022\
+svcupgnocreat=\
+svctimeout=6\
+svclist=\
+svcdir=\
+:
+
+%svc_mkrun\
+runfile=\
+logrunfile=\
+logdir=\
+logrestart=0\
+if test -n "${svcdir}"; then\
+  if test -n "$upgrade"; then\
+    if test -d "${svcdir}"; then\
+      runfile=${svcdir}/newrun.$$\
+      runmkdir=\
+      renfrom=$runfile\
+      rento=${svcdir}/run\
+      rundownfile=\
+      if test -d "${svcdir}/log"; then\
+        logrunfile=${svcdir}/log/newrun.$$\
+        logmkdir=\
+        logrenfrom=$logrunfile\
+        logrento=${svcdir}/log/run\
+        logdownfile=\
+        logrestart=1\
+      else\
+        logrunfile=${svcdir}/.log/run\
+        logmkdir=${svcdir}/.log\
+        logrenfrom=$logmkdir\
+        logrento=${svcdir}/log\
+        logdownfile=$logmkdir/down\
+        logrestart=2\
+      fi\
+    elif test -n "$svcupgnocreat"; then\
+      echo "The directory ${svcdir} didn't exist during the upgrade." 1>&2\
+      echo "ATTENTION: ${svcdir} was _not_ created." 1>&2\
+      echo "Please manually check the directory." 1>&2\
+      echo "" 1>&2\
+    else\
+      runfile=.${svcdir}/run\
+      runmkdir=.${svcdir}\
+      renfrom=$runmkdir\
+      rento=${svcdir}\
+      rundownfile=$runmkdir/down\
+      logrunfile=.${svcdir}/log/run\
+      logmkdir=.${svcdir}/log\
+      logrenfrom=\
+      logrento=\
+      logdownfile=$logmkdir/down\
+    fi\
+  else\
+    if test -d "${svcdir}"; then\
+      echo "The directory ${svcdir} already exist during the install." 1>&2\
+      echo "ATTENTION: I won't change the contents of directory ${svcdir}." 1>&2\
+      echo "Please manually check the directory." 1>&2\
+      echo "" 1>&2\
+    else\
+      runfile=.${svcdir}/run\
+      runmkdir=.${svcdir}\
+      renfrom=$runmkdir\
+      rento=${svcdir}\
+      rundownfile=$runmkdir/down\
+      logrunfile=.${svcdir}/log/run\
+      logmkdir=.${svcdir}/log\
+      logrenfrom=\
+      logrento=\
+      logdownfile=$logmkdir/down\
+    fi\
+  fi\
+else\
+  echo "ATTENTION: No svcdir was defined in the specfile's %post directive." 1>&2\
+  echo "This is an error, should be fixed by defining some svcdir." 1>&2\
+  echo "" 1>&2\
+fi\
+if test -n "$runfile"; then\
+  test -n "$runmkdir" && mkdir "$runmkdir"\
+  cat <<'__END__' >"$runfile"
+%svc_mklogrun __END__\
+  logdir=yes\
+  test -n "$logmkdir" && mkdir "$logmkdir"\
+  cat <<'__END__' >"$logrunfile"
+%svc_regsrv(dDLrR) __END__\
+  if test -n "$logdir"; then\
+    chmod +x "$logrunfile"\
+    %{-D:if test -z "$upgrade" && test -n "$logdownfile"; then\
+      touch "$logdownfile"\
+      echo "The file ${svcdir}/log/down was created." 1>&2\
+      echo "It should be removed so the log service can startup after a reboot." 1>&2\
+      echo "" 1>&2\
+    fi}\
+    test -n "$logrenfrom" && mv "$logrenfrom" "$logrento"\
+  fi\
+  chmod +x "$runfile"\
+  %{-d:if test -z "$upgrade" && test -n "$rundownfile"; then\
+    touch "$rundownfile"\
+    echo "The file ${svcdir}/down was created." 1>&2\
+    echo "It should be removed so the service can startup after a reboot." 1>&2\
+    echo "" 1>&2\
+  fi}\
+  test -n "$renfrom" && mv "$renfrom" "$rento"\
+  test -n "$upgrade" || logrestart=0\
+  case $logrestart in\
+  1)\
+    if test -z "$logdir"; then\
+%{-L:\
+      mv "$svcdir" ".$svcdir"\
+      svcdownok=yes\
+      for supdir in "$svcdir/log" "$svcdir"; do\
+        if svok ".$supdir"; then\
+          :\
+        else\
+          echo "Supervise was not running for ${supdir}." 1>&2\
+          continue\
+        fi\
+        echo "Stopping service ${supdir}." 1>&2\
+        svc -dx ".$supdir"\
+        timeout=$svctimeout\
+        while test x"$timeout" != x"0" && svok ".$supdir"; do\
+          timeout=`expr "$timeout" - 1`\
+          sleep 1\
+        done\
+        if svok ".$supdir"; then\
+          echo "Killing service ${supdir} with kill -9." 1>&2\
+          svc -k ".$supdir"\
+          sleep 1\
+        fi\
+        if svok ".$supdir"; then\
+          echo "I could not stop the service ${supdir}." 1>&2\
+          svcdownok=\
+        fi\
+      done\
+      if test -n "$svcdownok"; then\
+        echo "Restarting service ${svcdir} without log." 1>&2\
+        sleep $timeout # let's wait some time\
+        rm -r ".$svcdir/log"\
+        mv ".$svcdir" "$svcdir"\
+      else\
+        echo "It was not possible to restart the log service for ${svcdir}." 1>&2\
+        echo "ATTENTION: I will let the directory .${svcdir}." 1>&2\
+        echo "Please manually check the directory." 1>&2\
+        echo "" 1>&2\
+      fi}\
+%{!-L:\
+      echo "ATTENTION: The log directory for the service ${svcdir} was not removed." 1>&2\
+      echo "This directory was not included in the new version for this RPM," 1>&2\
+      echo "thus the service restart was not called." 1>&2\
+      echo "This way, the directory was not removed." 1>&2\
+      echo "ATTENTION: I will let the directory ${svcdir}/log." 1>&2\
+      echo "Please manually check the directory." 1>&2\
+      echo "" 1>&2\
+%{-r:      svc -t "$svcdir"}}\
+    else\
+%{-r:      svc -t "$svcdir"}\
+%{-R:      svc -t "$svcdir/log"}\
+      :\
+    fi\
+    ;;\
+  2)\
+    if test -n "$logdir"; then\
+%{-r:\
+      mv "$svcdir" ".$svcdir"\
+      svcdownok=yes\
+      for supdir in "$svcdir"; do\
+        if svok ".$supdir"; then\
+          :\
+        else\
+          echo "Supervise was not running for ${supdir}." 1>&2\
+          continue\
+        fi\
+        echo "Stopping service ${supdir}." 1>&2\
+        svc -dx ".$supdir"\
+        timeout=$svctimeout\
+        while test x"$timeout" != x"0" && svok ".$supdir"; do\
+          timeout=`expr "$timeout" - 1`\
+          sleep 1\
+        done\
+        if svok ".$supdir"; then\
+          echo "Killing service ${supdir} with kill -9." 1>&2\
+          svc -k ".$supdir"\
+          sleep 1\
+        fi\
+        if svok ".$supdir"; then\
+          echo "I could not stop the service ${supdir}." 1>&2\
+          svcdownok=\
+        fi\
+      done\
+      if test -n "$svcdownok"; then\
+        echo "Restarting service ${svcdir} with log." 1>&2\
+        sleep $timeout # let's wait some time\
+        mv ".$svcdir" "$svcdir"\
+        sleep $timeout # let's wait some time\
+        if svok "$svcdir/log"; then\
+          echo "Service restart ok." 1>&2\
+        else\
+          echo "There was an error starting the log service." 1>&2\
+          echo "Nonetheless the log for this service should correctly start at reboot." 1>&2\
+          echo "" 1>&2\
+        fi\
+      else\
+        echo "It was not possible to restart the log service for ${svcdir}." 1>&2\
+        echo "ATTENTION: I will let the directory .${svcdir}." 1>&2\
+        echo "Please manually check the directory." 1>&2\
+        echo "" 1>&2\
+      fi}\
+%{!-r:\
+      echo "ATTENTION: The log service for ${svcdir} was not started." 1>&2\
+      echo "This directory was included in the new version for this RPM," 1>&2\
+      echo "but the service restart was not called." 1>&2\
+      echo "This way, the log service was not restarted." 1>&2\
+      echo "The log service should correctly start at reboot." 1>&2\
+      echo "" 1>&2}\
+    else\
+%{-r:      svc -t "$svcdir"}\
+%{-R:      svc -t "$svcdir/log"}\
+      :\
+    fi\
+    ;;\
+  esac\
+fi\
+runfile=\
+logrunfile=\
+logdir=\
+svcdir=\
+:
+
+%svc_preun\
+erase=; test x"$1" = x"0" && erase=yes\
+cd /var/service\
+umask 022\
+svctimeout=6\
+svclist=\
+svcdir=\
+:
+
+%svc_unregsrv\
+if test -n "$erase"; then\
+  test -n "$svclist" || svclist=$svcdir\
+  for svcdir in $svclist; do\
+    test -d "$svcdir" || continue\
+    svcdirlist=$svcdir\
+    test -d "$svcdir/log" && svcdirlist="$svcdir/log $svcdir"\
+    mv "${svcdir}" ".${svcdir}"\
+    svcdownok=yes\
+    for supdir in $svcdirlist; do\
+      if svok ".$supdir"; then\
+        :\
+      else\
+        echo "Supervise was not running for ${supdir}." 1>&2\
+        continue\
+      fi\
+      echo "Stopping service ${supdir}." 1>&2\
+      svc -dx ".$supdir"\
+      timeout=$svctimeout\
+      while test x"$timeout" != x"0" && svok ".$supdir"; do\
+        timeout=`expr "$timeout" - 1`\
+        sleep 1\
+      done\
+      if svok ".$supdir"; then\
+        echo "Killing service ${supdir} with kill -9." 1>&2\
+        svc -k ".$supdir"\
+        sleep 1\
+      fi\
+      if svok ".$supdir"; then\
+        echo "I could not stop the service ${supdir}." 1>&2\
+        svcdownok=\
+      fi\
+    done\
+    if test -n "$svcdownok"; then\
+      rm -r ".$svcdir"\
+    else\
+      echo "ATTENTION: I will not remove the directory /var/service/.${svcdir}." 1>&2\
+      echo "Please manually check the directory." 1>&2\
+      echo "" 1>&2\
+    fi\
+  done\
+fi\
+svclist=\
+svcdir=\
+:

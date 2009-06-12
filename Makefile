@@ -1,5 +1,6 @@
 #
 # Author: Rogério Carvalho Schneider <stockrt@gmail.com>
+# URL:    http://stockrt.github.com
 #
 
 MODULE=$(shell basename $(PWD))
@@ -7,7 +8,7 @@ VERSION=$(shell sed -ne 's/^Version:[ \t]*\(.*\)/\1/p' $(MODULE).spec)
 USER=$(shell id -un)
 TOPDIR=$(HOME)/rpmbuild
 #TOPDIR=/tmp/rpm/$(USER)
-SOURCE_DIR=$(TOPDIR)/SOURCE
+SOURCE_DIR=$(TOPDIR)/SOURCES
 
 all: rpm
 
@@ -17,10 +18,12 @@ rpm:
 	mkdir -p $(SOURCE_DIR)
 
 	@echo "Preparing needed rpmmacros"
-	if [ -f $(HOME)/.rpmmacros ]; then mv -f $(HOME)/.rpmmacros $(HOME)/.rpmmacros.bck.$(MODULE); fi
-	echo "%_topdir $(TOPDIR)" >> ~/.rpmmacros
-	echo "%__arch_install_post /usr/lib/rpm/check-rpaths /usr/lib/rpm/check-buildroot" >> ~/.rpmmacros
-	echo "%_unpackaged_files_terminate_build 0" >> ~/.rpmmacros
+	if [ -f misc/rpmmacros ]; then \
+		if [ -f $(HOME)/.rpmmacros ]; then \
+			mv -f $(HOME)/.rpmmacros $(HOME)/.rpmmacros.bck.$(MODULE); \
+		fi; \
+		cat misc/rpmmacros > $(HOME)/.rpmmacros; \
+	fi
 
 	@echo "Generating package \"$(SOURCE_DIR)/$(MODULE)-$(VERSION).tar.gz\" from \"$(MODULE)\""
 	tar cvzf $(SOURCE_DIR)/$(MODULE)-$(VERSION).tar.gz $(MODULE) --exclude CVS --exclude ".#*"
@@ -29,7 +32,13 @@ rpm:
 	rpmbuild -bb $(MODULE).spec
 
 	@echo "Rolling back rpmmacros"
-	if [ -f $(HOME)/.rpmmacros.bck.$(MODULE) ]; then mv -f $(HOME)/.rpmmacros.bck.$(MODULE) $(HOME)/.rpmmacros; else rm -f $(HOME)/.rpmmacros; fi
+	if [ -f misc/rpmmacros ]; then \
+		if [ -f $(HOME)/.rpmmacros.bck.$(MODULE) ]; then \
+			mv -f $(HOME)/.rpmmacros.bck.$(MODULE) $(HOME)/.rpmmacros; \
+		else \
+			rm -f $(HOME)/.rpmmacros; \
+		fi; \
+	fi
 
 clean:
 	@echo "Cleaning"
