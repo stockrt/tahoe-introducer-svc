@@ -25,10 +25,19 @@ rpm:
 		cat misc/rpmmacros > $(HOME)/.rpmmacros; \
 	fi
 
-	@echo "Generating package \"$(SOURCE_DIR)/$(MODULE)-$(VERSION).tar.gz\" from \"$(MODULE)\""
-	tar cvzf $(SOURCE_DIR)/$(MODULE)-$(VERSION).tar.gz $(MODULE) --exclude CVS --exclude ".#*"
+	@echo "Generating package \"$(SOURCE_DIR)/$(MODULE)-$(VERSION).tar.gz\" \
+from \"$(MODULE)\""
+	tar cvzf $(SOURCE_DIR)/$(MODULE)-$(VERSION).tar.gz $(MODULE) \
+	--exclude CVS \
+	--exclude cvs \
+	--exclude ".svn" \
+	--exclude ".git" \
+	--exclude ".bzr" \
+	--exclude ".hg" \
+	--exclude "_darcs"
 
-	@echo "Generating RPM from package \"$(SOURCE_DIR)/$(MODULE)-$(VERSION).tar.gz\" using \"$(MODULE).spec\""
+	@echo "Generating RPM from package \"$(SOURCE_DIR)/$(MODULE)-$(VERSION).tar.gz\" \
+using \"$(MODULE).spec\""
 	rpmbuild -bb $(MODULE).spec
 
 	@echo "Rolling back rpmmacros"
