@@ -1,6 +1,6 @@
 Name:      tahoe-introducer-svc
 Version:   0.1.0
-Release:   1
+Release:   2
 Summary:   tahoe-introducer-svc daemontools configuration
 Group:     System/Server
 URL:       http://allmydata.org/trac/tahoe
@@ -58,6 +58,7 @@ tahoe-introducer-svc daemontools configuration
 svcdir=tahoe-introducer
 %svc_mkrun
 #!/bin/bash
+exec 2>&1
 exec %{_prefix}/local/%{name}/bin/%{name}
 %svc_mklogrun
 #!/bin/bash
@@ -71,5 +72,8 @@ svclist='tahoe-introducer'
 %svc_unregsrv
 
 %changelog
+* Tue Aug 18 2009 - Rogério Carvalho Schneider <stockrt@gmail.com> - 0.1.0-2
+- Added exec fd redir (exec 2>&1)
+
 * Mon Jun  8 2009 - Rogério Carvalho Schneider <stockrt@gmail.com> - 0.1.0-1
 - Initial packing
